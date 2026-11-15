@@ -16,5 +16,5 @@ Jasne kremowe tło, szałwia i ciemna zieleń zgodna z PDF, organiczne kształty
 ## Uwagi do produktu przed sprzedażą
 Rozdział 6 zapowiada 12 miejsc do sprawdzenia, ale tabela ma 11 pozycji. Strona nie powtarza liczbowej obietnicy; okładka jest autentyczna i zachowuje jej oryginalną treść. Rozdział 14 zaleca aktualizację źródeł przed sprzedażą. Nie dokonano niezależnej weryfikacji prawnej publikacji.
 
-## Brakujące dane
-Cena, URL koszyka, rzeczywisty sposób i termin dostarczenia produktu, dane sprzedawcy, adres kontaktowy, regulamin, polityka prywatności, informacje o prawach konsumenta. Bez nich strona jest demonstracją i nie przyjmuje płatności.
+## Konfiguracja sprzedaży
+Cena strony: 29,99 zł. Zakup prowadzi do wskazanego przez właściciela koszyka Naffy. Cenę w koszyku, metodę i termin dostarczenia produktu oraz dane i dokumenty sprzedawcy obsługuje platforma. Nie potwierdzono płatności ani dostarczenia PDF w rzeczywistym zamówieniu.

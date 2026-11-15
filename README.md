@@ -1,6 +1,6 @@
 # Wesele bez ukrytych kosztów
 
-Responsywna polska strona jednego e-booka. Vite + HTML/CSS/JavaScript, bez frameworka, zewnętrznych fontów, trackerów i płatnych zależności. Wszystkie obrazy są lokalne. Wersja demonstracyjna nie przyjmuje zamówień.
+Responsywna polska strona jednego e-booka. Vite + HTML/CSS/JavaScript, bez frameworka, zewnętrznych fontów, trackerów i płatnych zależności. Wszystkie obrazy są lokalne. Zakup obsługuje zewnętrzny koszyk Naffy.
 
 ## Uruchomienie i publikacja
 
@@ -16,16 +16,13 @@ npm test
 
 `npm test` uruchamia testy Chromium. W tym środowisku korzysta z `/usr/bin/chromium`; można wskazać inną przeglądarkę przez `CHROMIUM_PATH`. Jeśli system nie ma Chromium, zainstaluj przeglądarkę Playwright: `npx playwright install chromium`. Netlify odczyta `netlify.toml`: komenda `npm run build`, publikowany wyłącznie katalog `dist`. Na innym hostingu statycznym również publikuj tylko `dist`, nigdy całe `/workspace`.
 
-## Podłączenie sprzedaży — `public/sale-config.json`
+## Cena i zakup — `public/sale-config.json`
 
-1. Utwórz produkt cyfrowy w Naffy, Easycart lub wybranej platformie. Wgraj **pełny PDF wyłącznie do platformy sprzedażowej**, ustaw cenę, płatności oraz automatyczne dostarczenie pliku. Nie dodawaj PDF do repozytorium, `public` ani `dist`.
-2. W `checkoutUrl` wklej pełny adres HTTPS opublikowanego koszyka. Nie są potrzebne klucze API po stronie landing page.
-3. Ustaw `pricePLN` jako liczbę (końcowa cena w złotych zgodna z koszykiem), `deliveryDescription` zgodnie z rzeczywistą metodą i terminem dostawy. Nie używaj przykładowych obietnic automatycznej wysyłki bez weryfikacji operatora.
-4. Uzupełnij `sellerName`, `sellerDetails` (wymagane dane sprzedawcy), `contactEmail` i adresy HTTPS gotowych dokumentów: `termsUrl`, `privacyUrl`, `consumerRightsUrl`. Dokumenty muszą odpowiadać rzeczywistym warunkom sprzedaży treści cyfrowych, w tym informacjom o reklamacjach i odstąpieniu. Projekt nie zawiera wymyślonych dokumentów prawnych.
-5. Ustaw `enabled: true` dopiero po uzupełnieniu wszystkiego, ponownie zbuduj i opublikuj stronę. Jeśli konfiguracja jest niepełna, błędna lub nie da się jej pobrać, strona pozostaje w trybie demo.
-6. Sprawdź przejście do koszyka, zgodność ceny, zakup testowy w trybie testowym operatora i dostarczenie pliku. Integracja landing page to przekierowanie; sam serwis nie realizuje transakcji i nie potwierdza płatności.
+To jedyne źródło ceny (`pricePLN`) i adresu zakupu (`checkoutUrl`). Aktualna cena wynosi 29,99 zł. Wszystkie cztery przyciski zakupowe są zwykłymi linkami do Naffy, otwieranymi w tej samej karcie — również bez JavaScript. Vite wstawia cenę i adres do HTML podczas budowania. Nie ma lokalnego koszyka, symulacji zamówienia ani obsługi płatności.
 
-Wszystkie pola konfiguracji są publiczne — nie zapisuj tam sekretów. Po zmianie konfiguracji wymagany jest kolejny build/deploy. Nagłówki bezpieczeństwa zapisano w `netlify.toml`.
+Po zmianie konfiguracji uruchom `npm run build`. Push do gałęzi `main` uruchomi wdrożenie, jeśli repozytorium jest połączone z Netlify. Niepoprawny adres HTTPS lub cena zatrzymują build.
+
+Cenę w samym koszyku, dostarczenie PDF oraz dane sprzedawcy i dokumenty sprzedaży konfiguruje się w Naffy. Landing page odsyła do informacji dostępnych u operatora; nie tworzy dokumentów prawnych i nie potwierdza realizacji transakcji. Nie przechowuj w publicznej konfiguracji sekretów ani pełnego PDF.
 
 ## Zawartość i grafiki
 

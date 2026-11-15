@@ -1,12 +1,4 @@
 {
-  "enabled": false,
-  "pricePLN": null,
-  "checkoutUrl": "",
-  "deliveryDescription": "",
-  "sellerName": "",
-  "sellerDetails": "",
-  "contactEmail": "",
-  "termsUrl": "",
-  "privacyUrl": "",
-  "consumerRightsUrl": ""
+  "pricePLN": 29.99,
+  "checkoutUrl": "https://www.naffy.io/tomasz-kauch/wesele-bez-ukrytych-kosztow-r87"
 }

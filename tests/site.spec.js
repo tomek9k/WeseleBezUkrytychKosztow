@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-test('desktop: treść, grafiki, nawigacja, FAQ i demo bez płatności', async ({ page }) => {
+test('desktop: treść, grafiki, nawigacja i FAQ', async ({ page }) => {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
   await expect(page).toHaveTitle(/Wesele bez ukrytych kosztów/);
@@ -13,15 +13,8 @@ test('desktop: treść, grafiki, nawigacja, FAQ i demo bez płatności', async (
   }
   await page.evaluate(async () => { const imgs = [...document.images]; await Promise.all(imgs.map(i => { i.loading = 'eager'; return i.decode(); })); });
   expect(await page.locator('img').evaluateAll(imgs => imgs.every(i => i.complete && i.naturalWidth > 0))).toBe(true);
-  await page.getByRole('button', { name: /^Kup teraz/ }).click();
-  await expect(page.locator('#notice-dialog')).toBeVisible();
-  await expect(page.locator('#notice-text')).toContainText('nie przyjmuje płatności');
-  await page.keyboard.press('Escape');
-  await expect(page.locator('#notice-dialog')).not.toBeVisible();
   await page.locator('#faq summary').first().click();
   await expect(page.locator('#faq details').first()).toHaveAttribute('open', '');
-  await page.locator('[data-legal="termsUrl"]').click();
-  await expect(page.locator('#notice-text')).toContainText('nie został jeszcze udostępniony');
   const bookRatio = await page.locator('.book img').evaluate(i => i.getBoundingClientRect().height / i.getBoundingClientRect().width);
   expect(bookRatio).toBeLessThan(2);
   expect(bookRatio).toBeGreaterThan(1.2);
@@ -61,26 +54,44 @@ test('ograniczenie animacji pozostawia treść widoczną', async ({ page }) => {
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('auto');
 });
 
-test('niepełna lub niebezpieczna konfiguracja nie aktywuje sprzedaży', async ({ page }) => {
-  await page.route('**/sale-config.json', route => route.fulfill({ json: { enabled: true, pricePLN: 99, checkoutUrl: 'javascript:alert(1)' } }));
-  await page.goto('/'); await page.locator('[data-buy]').click();
-  await expect(page.locator('#notice-dialog')).toBeVisible();
-  await expect(page.locator('#price')).toHaveText('— zł');
-});
+const sale = JSON.parse(readFileSync('public/sale-config.json', 'utf8'));
+for (const width of [390, 1440]) {
+  test(`wszystkie przyciski zakupu kierują do Naffy w tej samej karcie (${width}px)`, async ({ page, context }) => {
+    await page.setViewportSize({ width, height: 900 });
+    // Zatrzymujemy żądanie u operatora: test nie składa zamówienia i nie płaci.
+    await page.route(sale.checkoutUrl, route => route.fulfill({ body: 'Cel przekierowania — bez transakcji.' }));
+    await page.goto('/');
+    await expect(page.locator('#price')).toHaveText('29,99 zł');
+    await expect(page.locator('[data-buy]')).toHaveCount(4);
+    for (let i = 0; i < 4; i++) {
+      await page.goto('/');
+      const link = page.locator('[data-buy]').nth(i);
+      await expect(link).toHaveAttribute('href', sale.checkoutUrl);
+      expect(await link.getAttribute('target')).toBeNull();
+      await link.click();
+      await expect(page).toHaveURL(sale.checkoutUrl);
+      expect(context.pages()).toHaveLength(1);
+    }
+  });
+}
 
-test('pełna konfiguracja kieruje do koszyka HTTPS bez symulowania płatności', async ({ page }) => {
-  const config = { enabled: true, pricePLN: 89, checkoutUrl: 'https://checkout.example.test/product', deliveryDescription: 'TEST: dostawa przez operatora.', sellerName: 'Dane testowe', sellerDetails: 'Wyłącznie test automatyczny', contactEmail: 'test@example.test', termsUrl: 'https://example.test/terms', privacyUrl: 'https://example.test/privacy', consumerRightsUrl: 'https://example.test/rights' };
-  await page.route('**/sale-config.json', route => route.fulfill({ json: config }));
-  await page.route('https://checkout.example.test/**', route => route.fulfill({ body: 'Koszyk testowy — bez transakcji.' }));
-  await page.goto('/'); await expect(page.locator('#price')).toContainText('89');
-  await expect(page.locator('#delivery')).toHaveText(config.deliveryDescription);
-  await expect(page.getByRole('link', { name: 'Regulamin', exact: true })).toHaveAttribute('href', config.termsUrl);
-  await page.locator('[data-buy]').click(); await expect(page).toHaveURL(config.checkoutUrl);
+test('cena i zakup działają bez JavaScript; brak komunikatów demonstracyjnych', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto('http://127.0.0.1:4173/');
+  await expect(page.locator('#price')).toHaveText('29,99 zł');
+  for (const link of await page.locator('[data-buy]').all()) {
+    await expect(link).toHaveAttribute('href', sale.checkoutUrl);
+  }
+  await expect(page.locator('body')).not.toContainText(/demonstracyjn|nieaktywn|Cena do uzupełnienia|— zł|skonfigurowaniu|nie przyjmuje zamówień/i);
+  await expect(page.locator('#notice-dialog')).toHaveCount(0);
+  await context.close();
 });
 
 test('artefakt publikacji nie zawiera pełnego PDF ani sekretów', () => {
   function files(dir) { return readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? files(join(dir,e.name)) : [join(dir,e.name)]); }
   const all = files('dist'); expect(all.some(p => p.toLowerCase().endsWith('.pdf'))).toBe(false);
   expect(all.filter(p => /sample-.*webp$/.test(p))).toHaveLength(2);
-  expect(JSON.parse(readFileSync('dist/sale-config.json','utf8')).enabled).toBe(false);
+  expect(JSON.parse(readFileSync('dist/sale-config.json','utf8'))).toEqual(sale);
+  expect(readFileSync('dist/index.html', 'utf8')).not.toMatch(/__CHECKOUT_URL__|__PRICE_PLN__/);
 });

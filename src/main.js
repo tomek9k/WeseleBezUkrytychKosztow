@@ -46,50 +46,6 @@ document.querySelectorAll('dialog').forEach(dialog => {
     if (e.target === dialog && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) dialog.close();
   });
 });
-function notice(text) { $('#notice-text').textContent = text; $('#notice-dialog').showModal(); }
-
-// JEDYNE MIEJSCE KONFIGURACJI SPRZEDAŻY: public/sale-config.json.
-// Nie umieszczaj tu kluczy API ani pełnego PDF. Dostawę skonfiguruj u operatora koszyka.
-let sale = null;
-function safeHttps(value) {
-  try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password ? url.href : null; } catch { return null; }
-}
-function validSale(c) {
-  return c?.enabled === true && typeof c.pricePLN === 'number' && Number.isFinite(c.pricePLN) && c.pricePLN > 0 &&
-    ['checkoutUrl','termsUrl','privacyUrl','consumerRightsUrl'].every(k => safeHttps(c[k])) &&
-    ['deliveryDescription','sellerName','sellerDetails','contactEmail'].every(k => typeof c[k] === 'string' && c[k].trim()) &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.contactEmail);
-}
-async function loadSale() {
-  try {
-    const response = await fetch('/sale-config.json', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Nie można odczytać konfiguracji');
-    const config = await response.json();
-    if (!validSale(config)) return;
-    sale = config;
-    $('#price').textContent = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(config.pricePLN);
-    $('#price-note').textContent = 'Cena końcowa produktu';
-    $('#purchase-status').textContent = 'Przejdziecie do zewnętrznego, bezpiecznego koszyka.';
-    $('#delivery').textContent = config.deliveryDescription; $('#faq-delivery').textContent = config.deliveryDescription;
-    $('#seller').textContent = `${config.sellerName} · ${config.sellerDetails}`;
-    const contact = document.createElement('a'); contact.href = `mailto:${config.contactEmail}`; contact.textContent = config.contactEmail;
-    $('#contact').replaceChildren(contact);
-    $('#footer-demo').textContent = 'Produkt cyfrowy · PDF';
-    $('.demo-note').textContent = 'Produkt cyfrowy · czytajcie na telefonie, tablecie lub komputerze';
-    document.querySelectorAll('[data-legal]').forEach(button => {
-      const a = document.createElement('a'); a.href = safeHttps(config[button.dataset.legal]); a.textContent = button.textContent; button.replaceWith(a);
-    });
-  } catch { /* Brak konfiguracji zawsze pozostawia bezpieczny tryb demonstracyjny. */ }
-}
-const saleReady = loadSale();
-document.querySelectorAll('[data-buy]').forEach(button => button.addEventListener('click', async () => {
-  await saleReady;
-  if (sale) window.location.assign(safeHttps(sale.checkoutUrl));
-  else notice('Koszyk nie został jeszcze podłączony. Ta strona nie przyjmuje płatności ani zamówień. Cena i warunki dostarczenia PDF zostaną podane przed uruchomieniem sprzedaży.');
-}));
-document.querySelectorAll('[data-legal]').forEach(button => button.addEventListener('click', () => {
-  notice('Ten dokument nie został jeszcze udostępniony przez sprzedawcę. Wersja demonstracyjna nie przyjmuje zamówień. Dokumenty i dane sprzedawcy muszą zostać uzupełnione przed rozpoczęciem sprzedaży.');
-}));
 if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   document.documentElement.classList.add('js-motion');
   const observer = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }), { threshold: 0.08 });
